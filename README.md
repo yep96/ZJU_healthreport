@@ -5,7 +5,27 @@
 
 不会markdown，语文水平也不好，描述颠三倒四只能凑合着看
 
-下载项目后需要修改data文件中的地址及ZJUHealthReport脚本中33行起的用户名密码和脚本位置等信息
+下载项目后需要修改ZJUHealthReport脚本中33行起的用户名密码，UA，API和脚本位置等信息
+
+data中的数据必改位置信息，其他可根据自己情况改，不修改提交效果如图<a href="https://github.com/yep96/ZJU_healthreport/raw/master/健康打卡.jpg">健康打卡.jpg</a>
+
+其他信息可以在电脑上打开<a href="https://healthreport.zju.edu.cn/ncov/wap/default/index">健康打卡网址</a>，查看html信息来修改，如今日在校，搜索到399行
+   ```html
+    <div name="sfzx" class="radio"><span>今日是否在校？ Are you on campus today?<i class="icon iconfont icon-shuoming"></i><em></em></span>
+        <div>
+            <div @click="setSfzx('1')"><span :class="{active: info.sfzx==='1'}"><i></i></span> <span>是 Yes</span></div>
+            <div @click="setSfzx('0')"><span :class="{active: info.sfzx==='0'}"><i></i></span> <span>否 No</span></div>
+        </div>
+    </div>
+
+   ```
+将data中"sfzx"对应的值改为"1"，其他信息同理。
+
+其中定位我是直接返回定位失败后手动选择地址<del>不过我真的也没有定位成功过</del>
+
+地址为显示点击获取地理位置没有问题，我试过手动提交，重新打卡查看也是不显示手动提交的地理位置
+
+或者可以先关闭钉钉定位权限并手选地址，再用Fiddle4抓个包看看post了什么数据，再url解码后修改，其中地址中的+换成空格，否则前后抓包不一致
 
 脚本需安装requests模块
    ```bash
