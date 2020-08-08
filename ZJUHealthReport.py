@@ -34,8 +34,10 @@ try:
     pwd = r''  # 统一认证账号密码
     UA = r''  # 自己的钉钉ua，如在钉钉中打开http://www.all-tool.cn/Tools/ua/
     api = "https://sc.ftqq.com/XXX.send"  # server酱的微信推送api，用于打卡失败提醒，可不用
-    # 修改data文件中的地址信息
-    cwd = r''  # 脚本所在路径
+    area = r'xx省 xx市 xx市'
+    province = r'xx省'
+    city = r'xx市'  # area中第一个市
+    cwd = r''  # 脚本所在路径 crontab执行时需要
     exit()  # 修改完上面的删掉这句
     s = requests.Session()
     if os.path.exists(cwd+'cookies'):
@@ -47,17 +49,16 @@ try:
         while not login(s,usr,pwd):
             time.sleep(30)
     header = {'User-Agent': UA,}
-    res = s.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index',headers=header,verify=False)
+    res = s.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index',headers={'User-Agent':UA,},verify=False)
     res.raise_for_status()
-    res.encoding = "utf-8"
+    res.encoding = "utf-8"  # 8/8表单更改后不需要从该网页提取信息
     with open(cwd+'data', encoding='utf-8') as f:
         data = eval(f.read())
-    data['date'] = re.search('"date":"(\d+?)"',res.text).group(1)
-    data['created'] = re.search('"created":(\d+?),',res.text).group(1)
-    data['id'] = re.search('"id":(\d+?),',res.text).group(1)
-    data['uid'] = re.search('"uid":"(\d+?)"',res.text).group(1)
+    data['area'] = area
+    data['province'] = province
+    data['city'] = city
     time.sleep(10)  # 延迟10s假装在填写，应该没用
-    res = s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save',data=data,headers=header,verify=False)
+    res = s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save',data=data,headers={'User-Agent':UA,},verify=False)
     res.raise_for_status()
     res.encoding = "utf-8"
     assert(re.search('"e":0',res.text) is not None)  # 检查返回值，是否成功打卡
