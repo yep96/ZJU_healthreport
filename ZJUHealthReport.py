@@ -33,7 +33,7 @@ try:
     usr = r''
     pwd = r''  # 统一认证账号密码
     UA = r''  # 自己的钉钉ua，如在钉钉中打开http://www.all-tool.cn/Tools/ua/
-    api = "https://sc.ftqq.com/XXX.send"  # server酱的微信推送api，用于打卡失败提醒，可不用
+    api = r'https://sc.ftqq.com/XXX.send'  # server酱的微信推送api，用于打卡失败提醒，可不用
     area = r'xx省 xx市 xx市'
     province = r'xx省'
     city = r'xx市'  # area中第一个市
@@ -47,11 +47,13 @@ try:
         os.remove(cwd+'cookies')
     else:
         while not login(s,usr,pwd):
+            with open(cwd+'login','a',encoding='utf-8') as f:
+                f.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+'登录ZJU\n')  # 记录登录次数及时间
             time.sleep(30)
-    header = {'User-Agent': UA,}
     res = s.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index',headers={'User-Agent':UA,},verify=False)
     res.raise_for_status()
     res.encoding = "utf-8"  # 8/8表单更改后不需要从该网页提取信息
+    assert(len(re.findall('getdqtlqk',res.text)) == 14)  # 从“以下地区返回浙江”地区数量是否改变判断表单是否改变
     with open(cwd+'data', encoding='utf-8') as f:
         data = eval(f.read())
     data['area'] = area
@@ -66,4 +68,4 @@ try:
     with open(cwd+'cookies', 'w', encoding='utf-8') as f:
         f.write(str(requests.utils.dict_from_cookiejar(s.cookies)))  # 此时的cookies是有效的更新，否则不保存下次登录
 except Exception as e:
-    requests.post(url=api, data={'text': '浙大健康打卡失败','data':str(e),})
+    requests.post(url=api, data={'text': '浙大健康打卡失败','desp':str(e),})
