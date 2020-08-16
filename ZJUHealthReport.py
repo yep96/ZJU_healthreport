@@ -63,7 +63,7 @@ try:
     data['province'] = area.split()[0]
     data['city'] = area.split()[1]
     time.sleep(10)  # 延迟10s假装在填写，应该没用
-    res = s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save',data=data,headers={'User-Agent':UA,},verify=False)
+    res = s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save',data=data,headers={'User-Agent':ua,},verify=False)
     res.raise_for_status()
     res.encoding = "utf-8"
     if (re.search('"e":0',res.text) is None):  # 检查返回值，是否成功打卡
