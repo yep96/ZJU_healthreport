@@ -28,16 +28,18 @@ def login(s,usr,pwd):
         return False
     return True
 
+def SendText(api,Error):
+    requests.post(url=api, data={'text': '浙大健康打卡失败','desp':Error,})
+    exit()
+
 
 try:
     usr = r''
     pwd = r''  # 统一认证账号密码
-    UA = r''  # 自己的钉钉ua，如在钉钉中打开http://www.all-tool.cn/Tools/ua/
-    api = r'https://sc.ftqq.com/XXX.send'  # server酱的微信推送api，用于打卡失败提醒，可不用
-    area = r'xx省 xx市 xx市'
-    province = r'xx省'
-    city = r'xx市'  # area中第一个市
-    cwd = r''  # 脚本所在路径 crontab执行时需要
+    ua = r''  # 自己的钉钉ua，如在钉钉中打开http://www.all-tool.cn/Tools/ua/
+    api = r'https://sc.ftqq.com/XXX.send'  # server酱的微信推送api，用于打卡失败提醒
+    area = r'xx省 xx市 xx区'  # 如浙江省 温州市 鹿城区 或 北京市 北京市 东城区。这里把手机关闭定位或不授予应用定位权限手动选择
+    cwd = r''  # 脚本所在路径 如/etc/Tasks/ 或 D:/Tasks/ ,crontab执行时需要
     exit()  # 修改完上面的删掉这句
     s = requests.Session()
     if os.path.exists(cwd+'cookies'):
@@ -50,22 +52,24 @@ try:
             with open(cwd+'login','a',encoding='utf-8') as f:
                 f.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+'登录ZJU\n')  # 记录登录次数及时间
             time.sleep(30)
-    res = s.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index',headers={'User-Agent':UA,},verify=False)
+    res = s.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index',headers={'User-Agent':ua,},verify=False)
     res.raise_for_status()
     res.encoding = "utf-8"  # 8/8表单更改后不需要从该网页提取信息
-    assert(len(re.findall('getdqtlqk',res.text)) == 14)  # 从“以下地区返回浙江”地区数量是否改变判断表单是否改变
+    if (len(re.findall('getdqtlqk',res.text)) != 14) or (len(re.findall('武汉',res.text)) != 2) or (len(re.findall('北京市',res.text)) != 1):
+        SendText(api, '表单已更改，请等待更新或自行修改')  # 从“以下地区返回浙江”地区数量是否改变简单判断表单是否改变
     with open(cwd+'data', encoding='utf-8') as f:
         data = eval(f.read())
     data['area'] = area
-    data['province'] = province
-    data['city'] = city
+    data['province'] = area.split()[0]
+    data['city'] = area.split()[1]
     time.sleep(10)  # 延迟10s假装在填写，应该没用
     res = s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save',data=data,headers={'User-Agent':UA,},verify=False)
     res.raise_for_status()
     res.encoding = "utf-8"
-    assert(re.search('"e":0',res.text) is not None)  # 检查返回值，是否成功打卡
+    if (re.search('"e":0',res.text) is None):  # 检查返回值，是否成功打卡
+        SendText(api, '打卡失败')
     print('打卡成功')
     with open(cwd+'cookies', 'w', encoding='utf-8') as f:
         f.write(str(requests.utils.dict_from_cookiejar(s.cookies)))  # 此时的cookies是有效的更新，否则不保存下次登录
 except Exception as e:
-    requests.post(url=api, data={'text': '浙大健康打卡失败','desp':str(e),})
+    SendText(api,str(e))
