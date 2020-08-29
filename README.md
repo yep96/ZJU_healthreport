@@ -4,6 +4,7 @@
 ```
 更新至8/8表单
 对“以下地区返回浙江”表单内容简单的检测，判断表单是否更改
+8/29 前两天把Linux小服务器弄坏了，今天就检测出表单已修改。今天抓包修改程序，明天测试程序是否正常运行
 ```
 
 尝试着练练手，看着应该是问题不大，风险自负<del>我已经在用了</del>
@@ -36,7 +37,7 @@ data文件中的数据可根据自己情况改，不修改提交效果如图<a h
 
 脚本需安装requests模块
    ```bash
-   $ python3 -m pip install requests
+   $ python3 -m pip install requests -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com
    ```
 
 运行
@@ -47,12 +48,12 @@ data文件中的数据可根据自己情况改，不修改提交效果如图<a h
 crontab定时任务，如在8点30打卡
    ```bash
    $ crontab -e
-   $ 0 30 8 * * * python3 /YOUR_PATH/ZJUHealthReport.py
+   $ 30 8 * * * python3 /YOUR_PATH/ZJUHealthReport.py
    ```
 
 这个脚本不需要一直运行，通过读取上一次运行时保存的cookies保持会话。也许不用每次都删除后更新cookies，猜测是可用的，没有测试过
 
-如果去掉更新cookies，则可以部署到云函数上自动打卡。需要将ZJUHealthReport.py、cookies和data一起上传，不知道ip和定位不匹配会不会有问题。阿里云服务的crontab最前面多了一个秒，0时区，可用 0 0 30 0 * * * 在八点半运行
+如果去掉更新cookies，则可以部署到云函数上自动打卡。需要将ZJUHealthReport.py、cookies和data一起上传，不知道ip和定位不匹配会不会有问题。阿里云服务的crontab最前面多了一个秒，0时区，可用 0 30 0 * * * 在八点半运行
 
 绑定serve酱后，如果打卡失败微信会推送<a href="https://github.com/yep96/ZJU_healthreport/raw/master/打卡失败提醒.jpg">打卡失败提醒.jpg</a>
 

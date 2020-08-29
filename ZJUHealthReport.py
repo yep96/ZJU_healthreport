@@ -28,6 +28,7 @@ def login(s,usr,pwd):
         return False
     return True
 
+
 def SendText(api,Error):
     requests.post(url=api, data={'text': '浙大健康打卡失败','desp':Error,})
     exit()
@@ -37,7 +38,7 @@ try:
     usr = r''
     pwd = r''  # 统一认证账号密码
     ua = r''  # 自己的钉钉ua，如在钉钉中打开http://www.all-tool.cn/Tools/ua/
-    api = r'https://sc.ftqq.com/XXX.send'  # server酱的微信推送api，用于打卡失败提醒
+    api = r'https://sc.ftqq.com/XXX.send'  # server酱的微信推送api，用于打卡失败提醒，很重要务必设置
     area = r'xx省 xx市 xx区'  # 如浙江省 温州市 鹿城区 或 北京市 北京市 东城区。这里把手机关闭定位或不授予应用定位权限手动选择
     cwd = r''  # 脚本所在路径 如/etc/Tasks/ 或 D:/Tasks/ ,crontab执行时需要
     exit()  # 修改完上面的删掉这句
@@ -48,21 +49,32 @@ try:
         s.cookies = requests.utils.cookiejar_from_dict(dict, cookiejar=None, overwrite=True)
         os.remove(cwd+'cookies')
     else:
+        try_times=0
         while not login(s,usr,pwd):
             with open(cwd+'login','a',encoding='utf-8') as f:
                 f.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+'登录ZJU\n')  # 记录登录次数及时间
             time.sleep(30)
+            try_times = try_times+1
+            if try_times > 5:
+                SendText(api, '登录失败')
     res = s.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index',headers={'User-Agent':ua,},verify=False)
     res.raise_for_status()
-    res.encoding = "utf-8"  # 8/8表单更改后不需要从该网页提取信息
-    if (len(re.findall('getdqtlqk',res.text)) != 14) or (len(re.findall('武汉',res.text)) != 2) or (len(re.findall('北京市',res.text)) != 1):
+    res.encoding = "utf-8"
+    if (len(re.findall('getdqtlqk',res.text)) != 15) or (len(re.findall('武汉',res.text)) != 2) or (len(re.findall('大连',res.text)) != 1) or (len(re.findall('active',res.text)) != 75):
         SendText(api, '表单已更改，请等待更新或自行修改')  # 从“以下地区返回浙江”地区数量是否改变简单判断表单是否改变
     with open(cwd+'data', encoding='utf-8') as f:
         data = eval(f.read())
     data['area'] = area
     data['province'] = area.split()[0]
     data['city'] = area.split()[1]
-    time.sleep(10)  # 延迟10s假装在填写，应该没用
+    data['id'] = re.search(r'id":"(\d*?)"', res.text).groups()[0]
+    data['uid'] = re.search(r'uid":"(\d*?)"', res.text).groups()[0]
+    data['date'] = re.search(r'date":"(\d*?)"', res.text).groups()[0]
+    data['created'] = re.search(r'created":"(\d*?)"', res.text).groups()[0]
+    data2['error']=r'{"type":"error","message":"Get geolocation time out.Get ipLocation failed.","info":"FAILED","status":0}'
+    time.sleep(5)
+    s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save-geo-error',data=data2,headers={'User-Agent':ua,},verify=False)
+    time.sleep(5)  # 延迟假装在填写，应该没用
     res = s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save',data=data,headers={'User-Agent':ua,},verify=False)
     res.raise_for_status()
     res.encoding = "utf-8"
