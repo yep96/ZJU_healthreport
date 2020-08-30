@@ -30,6 +30,7 @@ def login(s,usr,pwd):
 
 
 def SendText(api,Error):
+    print(Error)
     requests.post(url=api, data={'text': '浙大健康打卡失败','desp':Error,})
     exit()
 
@@ -42,6 +43,9 @@ try:
     area = r'xx省 xx市 xx区'  # 如浙江省 温州市 鹿城区 或 北京市 北京市 东城区。这里把手机关闭定位或不授予应用定位权限手动选择
     cwd = r''  # 脚本所在路径 如/etc/Tasks/ 或 D:/Tasks/ ,crontab执行时需要
     exit()  # 修改完上面的删掉这句
+    version=requests.get('https://pastebin.com/raw/6XCDvF71',verify=False).text
+    if version != '2020/8/30':  # 检测一下有无更新，github国内访问不稳定
+        SendText(api, '请更新版本\nhttps://github.com/yep96/ZJU_healthreport')
     s = requests.Session()
     if os.path.exists(cwd+'cookies'):
         with open(cwd+'cookies') as f:
