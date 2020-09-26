@@ -71,10 +71,10 @@ try:
     data['area'] = area
     data['province'] = area.split()[0]
     data['city'] = area.split()[1]
-    data['id'] = re.search(r'id":"(\d*?)"', res.text).groups()[0]
-    data['uid'] = re.search(r'uid":"(\d*?)"', res.text).groups()[0]
-    data['date'] = re.search(r'date":"(\d*?)"', res.text).groups()[0]
-    data['created'] = re.search(r'created":"(\d*?)"', res.text).groups()[0]
+    data['id'] = re.search(r'"id":(\d*?),', res.text).groups()[0]
+    data['uid'] = re.search(r'"uid":"(\d*?)"', res.text).groups()[0]
+    data['date'] = re.search(r'"date":"(\d*?)"', res.text).groups()[0]
+    data['created'] = re.search(r'"created":(\d*?),', res.text).groups()[0]
     data2 = {'error': r'{"type":"error","message":"Get geolocation time out.Get ipLocation failed.","info":"FAILED","status":0}'}
     time.sleep(5)
     s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save-geo-error',data=data2,headers={'User-Agent':ua,},verify=False)
