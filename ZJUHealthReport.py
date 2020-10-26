@@ -44,7 +44,7 @@ try:
     cwd = r''  # 脚本所在路径 如/etc/Tasks/ 或 D:/Tasks/ ,crontab执行时需要
     exit()  # 修改完上面的删掉这句
     version=requests.get('https://pastebin.com/raw/6XCDvF71',verify=False).text
-    if version != '2020/9/26':  # 检测一下有无更新，github国内访问不稳定
+    if version != '2020/10/26':  # 检测一下有无更新，github国内访问不稳定
         SendText(api, '请更新版本\nhttps://github.com/yep96/ZJU_healthreport')
     s = requests.Session()
     if os.path.exists(cwd+'cookies'):
@@ -71,10 +71,10 @@ try:
     data['area'] = area
     data['province'] = area.split()[0]
     data['city'] = area.split()[1]
-    data['id'] = re.search(r'"id":(\d*?),', res.text).groups()[0]
+    data['id'] = re.search(r'"id":"(\d*?)",', res.text).groups()[0]
     data['uid'] = re.search(r'"uid":"(\d*?)"', res.text).groups()[0]
     data['date'] = re.search(r'"date":"(\d*?)"', res.text).groups()[0]
-    data['created'] = re.search(r'"created":(\d*?),', res.text).groups()[0]
+    data['created'] = re.search(r'"created":"(\d*?)",', res.text).groups()[0]
     data2 = {'error': r'{"type":"error","message":"Get geolocation time out.Get ipLocation failed.","info":"FAILED","status":0}'}
     time.sleep(5)
     s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save-geo-error',data=data2,headers={'User-Agent':ua,},verify=False)
