@@ -44,7 +44,7 @@ try:
     cwd = r''  # 脚本所在路径 如/etc/Tasks/ 或 D:/Tasks/ ,crontab执行时需要
     exit()  # 修改完上面的删掉这句
     version=requests.get('https://pastebin.com/raw/6XCDvF71',verify=False).text
-    if version != '2020/10/26':  # 检测一下有无更新，github国内访问不稳定
+    if version != '2020/11/30':  # 检测一下有无更新，github国内访问不稳定
         SendText(api, '请更新版本\nhttps://github.com/yep96/ZJU_healthreport')
     s = requests.Session()
     if os.path.exists(cwd+'cookies'):
@@ -64,8 +64,8 @@ try:
     res = s.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index',headers={'User-Agent':ua,},verify=False)
     res.raise_for_status()
     res.encoding = "utf-8"
-    if (len(re.findall('getdqtlqk',res.text)) != 15) or (len(re.findall('武汉',res.text)) != 2) or (len(re.findall('大连',res.text)) != 1) or (len(re.findall('active',res.text)) != 75):
-        SendText(api, '表单已更改，请等待更新或自行修改')  # 从“以下地区返回浙江”地区数量是否改变简单判断表单是否改变
+    if (len(re.findall('getdqtlqk',res.text)) != 15) or (len(re.findall('武汉',res.text)) != 2) or (len(re.findall('大连',res.text)) != 1) or (len(re.findall('active',res.text)) != 77):
+        SendText(api, '表单已更改，请等待更新或自行修改')  # 简单判断表单是否改变
     with open(cwd+'data', encoding='utf-8') as f:
         data = eval(f.read())
     data['area'] = area
