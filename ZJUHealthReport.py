@@ -44,7 +44,7 @@ try:
     cwd = r''  # 脚本所在路径 如/etc/Tasks/ 或 D:/Tasks/ ,crontab执行时需要
     exit()  # 修改完上面的删掉这句
     version=requests.get('https://pastebin.com/raw/6XCDvF71',verify=False).text
-    if version != '2020/11/30':  # 检测一下有无更新，github国内访问不稳定
+    if version != '2020/12/21':  # 检测一下有无更新，github国内访问不稳定
         SendText(api, '请更新版本\nhttps://github.com/yep96/ZJU_healthreport')
     s = requests.Session()
     if os.path.exists(cwd+'cookies'):
