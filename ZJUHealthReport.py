@@ -64,17 +64,17 @@ try:
     res = s.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index',headers={'User-Agent':ua,},verify=False)
     res.raise_for_status()
     res.encoding = "utf-8"
-    if (len(re.findall('getdqtlqk',res.text)) != 15) or (len(re.findall('武汉',res.text)) != 2) or (len(re.findall('大连',res.text)) != 1) or (len(re.findall('active',res.text)) != 77):
+    if (len(re.findall('getdqtlqk',res.text)) != 15) or (len(re.findall('"',res.text)) != 1999) or (len(re.findall('<',res.text)) != 1425) or (len(re.findall('active',res.text)) != 77)
         SendText(api, '表单已更改，请等待更新或自行修改')  # 简单判断表单是否改变
     with open(cwd+'data', encoding='utf-8') as f:
         data = eval(f.read())
     data['area'] = area
     data['province'] = area.split()[0]
     data['city'] = area.split()[1]
-    data['id'] = re.search(r'"id":(\d*?),', res.text).groups()[0]
+    data['id'] = re.search(r'"id":"(\d*?)",', res.text).groups()[0]
     data['uid'] = re.search(r'"uid":"(\d*?)"', res.text).groups()[0]
     data['date'] = re.search(r'"date":"(\d*?)"', res.text).groups()[0]
-    data['created'] = re.search(r'"created":(\d*?),', res.text).groups()[0]
+    data['created'] = re.search(r'"created":"(\d*?)",', res.text).groups()[0]
     data2 = {'error': r'{"type":"error","message":"Get geolocation time out.Get ipLocation failed.","info":"FAILED","status":0}'}
     time.sleep(5)
     s.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save-geo-error',data=data2,headers={'User-Agent':ua,},verify=False)
