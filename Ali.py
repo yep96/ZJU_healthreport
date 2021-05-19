@@ -20,7 +20,7 @@ class ZJUHealthReport():
         self.area = area
 
         version = requests.get('https://pastebin.com/raw/6XCDvF71', verify=False).text
-        if version != '2021/2/6':  # 检测一下有无更新，github国内访问不稳定
+        if version != '2021/5/19':  # 检测一下有无更新，github国内访问不稳定
             SendText(self.api, '请更新版本')
 
         if os.path.exists('cookies'):
@@ -69,16 +69,16 @@ class ZJUHealthReport():
         if '统一身份认证' in res.text:
             SendText(self.api, '登录失效，请更新cookies')
 
-        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('"', res.text)) != 1903) or (len(re.findall('<', res.text)) != 1433) or (len(re.findall('active', res.text)) != 78):
+        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('"', res.text)) != 1973) or (len(re.findall('<', res.text)) != 1230) or (len(re.findall('active', res.text)) != 69):
             SendText(self.api, '表单已更改，请等待更新或自行修改{} {} {} {}'.format(len(re.findall('getdqtlqk', res.text)), len(re.findall('"', res.text)), len(re.findall('<', res.text)), len(re.findall('active', res.text))))  # 简单判断表单是否改变
 
         self.data['area'] = self.area
         self.data['province'] = self.area.split()[0]
         self.data['city'] = self.area.split()[1]
-        self.data['id'] = re.search(r'"id":(\d*?),', res.text).groups()[0]
+        self.data['id'] = re.search(r'"id":"(\d*?)",', res.text).groups()[0]
         self.data['uid'] = re.search(r'"uid":"(\d*?)"', res.text).groups()[0]
         self.data['date'] = re.search(r'"date":"(\d*?)"', res.text).groups()[0]
-        self.data['created'] = re.search(r'"created":(\d*?),', res.text).groups()[0]
+        self.data['created'] = re.search(r'"created":"(\d*?)",', res.text).groups()[0]
 
         data2 = {'error': r'{"type":"error","message":"Get geolocation time out.Get ipLocation failed.","info":"FAILED","status":0}'}
         time.sleep(3)
