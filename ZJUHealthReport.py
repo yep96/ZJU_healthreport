@@ -75,7 +75,7 @@ class ZJUHealthReport():
             #    f.write(str(requests.utils.dict_from_cookiejar(self.session.cookies)))
             exit()
 
-        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('"', res.text)) != 1973) or (len(re.findall('<', res.text)) != 1230) or (len(re.findall('active', res.text)) != 69):
+        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('"', res.text)) != 1885) or (len(re.findall('<', res.text)) != 1230) or (len(re.findall('active', res.text)) != 69):
             SendText(self.api, '表单已更改，请等待更新或自行修改{} {} {} {}'.format(len(re.findall('getdqtlqk', res.text)), len(re.findall('"', res.text)), len(re.findall('<', res.text)), len(re.findall('active', res.text))))  # 简单判断表单是否改变
 
         self.data['area'] = self.area
