@@ -25,7 +25,7 @@
 
 登录部分好像失效了，获取cookies方法：在电脑上打开<a href="https://healthreport.zju.edu.cn/ncov/wap/default/index">健康打卡网址</a>，按F12选择Network后刷新，选择index的url复制其cookies，<a href="https://github.com/yep96/ZJU_healthreport/raw/master/cookies.jpg">如图</a>。将KEY1=VAL1; KEY2=VAL2; ...改为{"KEY1": "VAL1", "KEY2":"VAL2", ...}，写入main中定义名字的文件中，<a href="https://github.com/yep96/ZJU_healthreport/raw/master/name.jpg">如图</a>。
 
-云函数的版本。将data，ali.py上传至云函数平台，设置触发任务为时间触发 0 30 0 * * * 即可在八点半运行（云函数的时区为UTC +0）。
+云函数的版本。将cookies，data，ali.py上传至云函数平台，设置触发任务为时间触发 0 30 0 * * * 即可在八点半运行（云函数的时区为UTC +0）。配置完<a href="https://github.com/yep96/ZJU_healthreport/raw/master/Func.jpg">如图</a>
 
 相对于别的打卡脚本，我这个显得麻烦的多，又要更新又要设置api、ua的。为了更像真人，这里选择用cookies保持，而不是每次都重新登录；同时如果打卡网页发生改变，提交不对应的信息其实也能打卡成功，但学校会不会认真我也不知道。所以脚本的容差性是故意写的很差的，以免网页修改后乱打卡。不做GitHub action是因为这是境外ip。希望是想的太多吧
 
