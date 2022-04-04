@@ -2,12 +2,14 @@ import os
 import time
 import re
 import requests
+import logging
 from random import random as rand
 requests.packages.urllib3.disable_warnings()
+logger = logging.getLogger()
 
 
 def SendText(api, Error):
-    print(Error)
+    logger.info(Error)
     data = '{"msgtype":"markdown","markdown": {"title":"健康打卡通知","text": "健康打卡失败\n\n'+Error+'\n> [更新地址](https://github.com/yep96/ZJU_healthreport)"}}'
     requests.post(url='https://oapi.dingtalk.com/robot/send?access_token='+api, headers={'Content-Type': 'application/json'}, data=data.encode('utf-8'))
 
@@ -62,9 +64,10 @@ class ZJUHealthReport():
         res = self.session.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index', headers=self.ua, verify=False)
         res.raise_for_status()
         res.encoding = "utf-8"
-        # print(str(requests.utils.dict_from_cookiejar(self.session.cookies)))
+
+        logger.info(str(requests.utils.dict_from_cookiejar(self.session.cookies)))
         if "hasFlag: '1'" in res.text:
-            print('已打卡')
+            logger.info('已打卡')
             return True
 
         if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('<', res.text)) != 1251) or (len(re.findall('active', res.text)) != 72):
@@ -91,7 +94,7 @@ class ZJUHealthReport():
         if '"e":0' not in res.text:  # 检查返回值，是否成功打卡
             SendText(self.api, '打卡失败')
             return False
-        print('打卡成功')
+        logger.info('打卡成功')
 
 
 if __name__ == '__main__':
