@@ -22,9 +22,9 @@ class ZJUHealthReport():
         self.cookies = self.cwd + cookies
         self.user = user
 
-        version = requests.get('https://pastebin.com/raw/6XCDvF71', verify=False)
-        if version and version.text != '2021/7/9':  # 检测一下有无更新，github国内访问不稳定
-            SendText(self.api, '请更新版本')
+        # version = requests.get('https://pastebin.com/raw/6XCDvF71', verify=False)
+        # if version and version.text != '2021/7/9':  # 检测一下有无更新，github国内访问不稳定
+            # SendText(self.api, '请更新版本')
 
         if os.path.exists(self.cookies):
             with open(self.cookies, encoding='utf-8') as f:
