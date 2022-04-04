@@ -1,7 +1,8 @@
-import requests
-import re
 import os
 import time
+import re
+import requests
+from random import random as rand
 requests.packages.urllib3.disable_warnings()
 
 
@@ -77,7 +78,7 @@ class ZJUHealthReport():
             print('已打卡')
             return True
 
-        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('<', res.text)) != 1226) or (len(re.findall('active', res.text)) != 69):
+        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('<', res.text)) != 1251) or (len(re.findall('active', res.text)) != 72):
             SendText(self.api, '表单已更改，请等待更新或自行修改 {} {} {}'.format(len(re.findall('getdqtlqk', res.text)), len(re.findall('<', res.text)), len(re.findall('active', res.text))))  # 简单判断表单是否改变
 
         self.data['area'] = self.area
@@ -87,11 +88,14 @@ class ZJUHealthReport():
         self.data['uid'] = re.search(r'"uid":"?(\d*)"?,', res.text).groups()[0]
         self.data['date'] = re.search(r'"date":"?(\d*)"?,', res.text).groups()[0]
         self.data['created'] = re.search(r'"created":"?(\d*)"?,', res.text).groups()[0]
+        csrf = re.search(r'"(\w{32})": ?"(\w{10})", ?"(\w{32})": ?"(\w{32})"[\s\S]{1,50}oldInfo', res.text).groups()
+        self.data[csrf[0]] = csrf[1]
+        self.data[csrf[2]] = csrf[3]
 
         data2 = {'error': r'{"type":"error","message":"Get geolocation time out.Get ipLocation failed.","info":"FAILED","status":0}'}
-        time.sleep(3)
+        time.sleep(rand()*3+3)
         self.session.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save-geo-error', data=data2, headers=self.ua, verify=False)
-        time.sleep(3)  # 延迟假装在填写，应该没用
+        time.sleep(rand()*3+2)  # 延迟假装在填写，应该没用
         res = self.session.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save', data=self.data, headers=self.ua, verify=False)
         res.raise_for_status()
         res.encoding = "utf-8"
@@ -101,12 +105,12 @@ class ZJUHealthReport():
         print('打卡成功')
 
         with open(self.cookies, 'w', encoding='utf-8') as f, open(self.cwd+'log', 'a') as log:
-            f.write(str(requests.utils.dict_from_cookiejar(self.session.cookies)))    # 此时的cookies是有效的更新，否则 不保存下次登录
+            f.write(str(requests.utils.dict_from_cookiejar(self.session.cookies)))    # 此时的cookies是有效的更新，否则不保存下次登录
             log.write(self.user+'-ZJU健康打卡成功\n')
 
 if __name__ == '__main__':
     usr = ['学号1', '学号2'] # 以下列表均可继续添加，长度保持一致即可
-    passwd = [r'密码1', r'密码2']
+    passwd = [r'密码1', r'密码2'] # 登录好像有问题，随便填个占位置
     # 自己的钉钉ua，如在钉钉中打开http://www.all-tool.cn/Tools/ua/，也可只设置一个UA，修改ZJUHealthReport传入参数为ua[0]
     ua = [r'UA1', r'UA2']
     # 钉钉推送api，用于打卡失败提醒，很重要务必设置。填写https://oapi.dingtalk.com/robot/send?access_token=之后的即可
@@ -115,6 +119,7 @@ if __name__ == '__main__':
     cookies = ['名字1', '名字2'] # cookies和html的文件名，用于区分多人任务
     cwd = r'/etc/Tasks/ZJU/'  # 脚本所在路径 如/etc/Tasks/ 或 D:/Tasks/ ,crontab执行时需要
     for i in range(len(cookies)):
+        time.sleep(rand()*5+2)
         try:
             DK = ZJUHealthReport(usr[i], passwd[i], ua[i], api[i], area[i], cwd, cookies=cookies[i])
             DK.DK()
