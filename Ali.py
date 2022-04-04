@@ -1,35 +1,33 @@
-import requests
-import re
 import os
 import time
+import re
+import requests
+from random import random as rand
 requests.packages.urllib3.disable_warnings()
 
 
 def SendText(api, Error):
     print(Error)
     data = '{"msgtype":"markdown","markdown": {"title":"健康打卡通知","text": "健康打卡失败\n\n'+Error+'\n> [更新地址](https://github.com/yep96/ZJU_healthreport)"}}'
-    requests.post(url=api, headers={'Content-Type': 'application/json'}, data=data.encode('utf-8'))
-    exit()
+    requests.post(url='https://oapi.dingtalk.com/robot/send?access_token='+api, headers={'Content-Type': 'application/json'}, data=data.encode('utf-8'))
 
 
 class ZJUHealthReport():
-    def __init__(self, user, passwd, ua, api, area):
+    def __init__(self, user, passwd, ua, api, area, cookiesName = 'cookies'):
         self.session = requests.session()
-        self.ua = ua
+        self.ua = {'User-Agent': ua}
         self.api = api
         self.area = area
+        self.user = user
 
-        version = requests.get('https://pastebin.com/raw/6XCDvF71', verify=False).text
-        if version != '2021/5/19':  # 检测一下有无更新，github国内访问不稳定
-            SendText(self.api, '请更新版本')
+        with open(cookiesName) as f:
+            cookies = eval(f.read())
 
-        if os.path.exists('cookies'):
-            with open('cookies', encoding='utf-8') as f:
-                cookies = eval(f.read())
-            self.session.cookies = requests.utils.cookiejar_from_dict(cookies, cookiejar=None, overwrite=True)
-        else:
+        self.session.cookies = requests.utils.cookiejar_from_dict(cookies, cookiejar=None, overwrite=True)
+        if '日常健康报备' not in self.session.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index', headers=self.ua).text:
             if not self.login(user, passwd):
                 SendText(self.api, '登陆失败')
+                self.session = None
 
         with open('data', encoding='utf-8') as f:
             self.data = eval(f.read())
@@ -59,49 +57,55 @@ class ZJUHealthReport():
         return True
 
     def DK(self):
-        res = self.session.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index', headers={'User-Agent': self.ua, }, verify=False)
+        if self.session == None:
+            return False
+        res = self.session.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index', headers=self.ua, verify=False)
         res.raise_for_status()
         res.encoding = "utf-8"
-        print(str(requests.utils.dict_from_cookiejar(self.session.cookies)))
+        # print(str(requests.utils.dict_from_cookiejar(self.session.cookies)))
         if "hasFlag: '1'" in res.text:
             print('已打卡')
-            exit()
-        if '统一身份认证' in res.text:
-            SendText(self.api, '登录失效，请更新cookies')
+            return True
 
-        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('"', res.text)) != 1973) or (len(re.findall('<', res.text)) != 1230) or (len(re.findall('active', res.text)) != 69):
-            SendText(self.api, '表单已更改，请等待更新或自行修改{} {} {} {}'.format(len(re.findall('getdqtlqk', res.text)), len(re.findall('"', res.text)), len(re.findall('<', res.text)), len(re.findall('active', res.text))))  # 简单判断表单是否改变
+        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('<', res.text)) != 1251) or (len(re.findall('active', res.text)) != 72):
+            SendText(self.api, '表单已更改，请等待更新或自行修改 {} {} {}'.format(len(re.findall('getdqtlqk', res.text)), len(re.findall('<', res.text)), len(re.findall('active', res.text))))  # 简单判断表单是否改变
 
         self.data['area'] = self.area
         self.data['province'] = self.area.split()[0]
         self.data['city'] = self.area.split()[1]
-        self.data['id'] = re.search(r'"id":"(\d*?)",', res.text).groups()[0]
-        self.data['uid'] = re.search(r'"uid":"(\d*?)"', res.text).groups()[0]
-        self.data['date'] = re.search(r'"date":"(\d*?)"', res.text).groups()[0]
-        self.data['created'] = re.search(r'"created":"(\d*?)",', res.text).groups()[0]
+        self.data['id'] = re.search(r'"id":"?(\d*)"?,', res.text).groups()[0]
+        self.data['uid'] = re.search(r'"uid":"?(\d*)"?,', res.text).groups()[0]
+        self.data['date'] = re.search(r'"date":"?(\d*)"?,', res.text).groups()[0]
+        self.data['created'] = re.search(r'"created":"?(\d*)"?,', res.text).groups()[0]
+        csrf = re.search(r'"(\w{32})": ?"(\w{10})", ?"(\w{32})": ?"(\w{32})"[\s\S]{1,50}oldInfo', res.text).groups()
+        self.data[csrf[0]] = csrf[1]
+        self.data[csrf[2]] = csrf[3]
 
         data2 = {'error': r'{"type":"error","message":"Get geolocation time out.Get ipLocation failed.","info":"FAILED","status":0}'}
-        time.sleep(3)
-        self.session.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save-geo-error', data=data2, headers={'User-Agent': self.ua, }, verify=False)
-        time.sleep(3)  # 延迟假装在填写，应该没用
-        res = self.session.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save', data=self.data, headers={'User-Agent': self.ua, }, verify=False)
+        time.sleep(rand()*3+3)
+        self.session.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save-geo-error', data=data2, headers=self.ua, verify=False)
+        time.sleep(rand()*3+2)  # 延迟假装在填写，应该没用
+        res = self.session.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save', data=self.data, headers=self.ua, verify=False)
         res.raise_for_status()
         res.encoding = "utf-8"
-        if (re.search('"e":0', res.text) is None):  # 检查返回值，是否成功打卡
+        if '"e":0' not in res.text:  # 检查返回值，是否成功打卡
             SendText(self.api, '打卡失败')
+            return False
         print('打卡成功')
 
 
-def handler(event, context):
-    usr = r'XXX'
-    pwd = r'XXX'  # 统一认证账号密码
-    # 自己的钉钉ua，如在钉钉中打开http://www.all-tool.cn/Tools/ua/
-    ua = r'XXX'
-    # 钉钉推送api，用于打卡失败提醒，很重要务必设置
-    api = r'https://oapi.dingtalk.com/robot/send?access_token=XXX'
-    area = r'浙江省 杭州市 西湖区'  # 如浙江省 温州市 鹿城区 或 北京市 北京市 东城区。这里把手机关闭定位或不授予应用定位权限手动选择
+if __name__ == '__main__':
+    usr = '学号'
+    passwd = r'密码' # 登录好像有问题，随便填个占位置
+    # 自己的钉钉ua，如在钉钉中打开http://www.all-tool.cn/Tools/ua/，也可只设置一个UA，修改ZJUHealthReport传入参数为ua[0]
+    ua = r'UA'
+    # 钉钉推送api，用于打卡失败提醒，很重要务必设置。填写https://oapi.dingtalk.com/robot/send?access_token=之后的即可
+    api = r'API'
+    area = r'浙江省 杭州市 西湖区' # 填入健康打卡“所在地点”地址
+    cookiesName = 'DK' # cookies的文件名
+    time.sleep(rand()*5+2)
     try:
-        DK = ZJUHealthReport(usr, pwd, ua, api, area)
+        DK = ZJUHealthReport(usr, passwd, ua, api, area, cookiesName=cookiesName)
         DK.DK()
     except Exception as e:
         SendText(api, str(e))
