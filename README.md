@@ -17,12 +17,15 @@
   2/6 更新表单匹配
  5/19 原来以为学校把数据加密了，原来是前一天没有打卡导致没有缓存数据。改了一下继续用
   7/9 增加多人任务，可以帮同学打卡了，只用获取cookies保存到此目录下后修改名字即可。不再对"id":"XXX"和"id":XXX进行区分
+  4/4 一天不打卡就去蓝码太过分了些，增加匹配验证数据
 ```
-关于疫苗接种，默认为已完成接种，否则将data中的jzxgymqk后面数字调整至1:接种一针 或2:未接种
+需要打开脚本按提示修改
 
-听同学说有个健康打卡的网站，输入统一认证一卡通、密码后定时打卡。网站所有者可能不拿来干什么，但是将账号密码发送给陌生人是一件很危险的事情。
+关于疫苗接种，默认为已接种第三针，否则将data中的jzxgymqk后面数字为 已接种第一针/已满6个月/未满6个月/已接种第三针/未接种：1/4/5/6/3
 
-所以最近修改了一个阿里云函数的版本。将data，cookies，ali.py上传至云函数平台，设置触发任务为时间触发 0 30 0 * * * 即可在八点半运行。若上传了cookies则不必在脚本中填写账号密码，否则必须填写（cookies本身有效期是1个月，如果本地用session每次会更新不会失效，在云函数上不确定，正在测试）。试了一个多星期没问题，没试过更久的
+登录部分好像失效了，获取cookies方法：在电脑上打开<a href="https://healthreport.zju.edu.cn/ncov/wap/default/index">健康打卡网址</a>，按F12选择Network后刷新，选择index的url复制其cookies，<a href="https://github.com/yep96/ZJU_healthreport/raw/master/cookies.jpg">如图</a>。将KEY1=VAL1; KEY2=VAL2; ...改为{"KEY1": "VAL1", "KEY2":"VAL2", ...}，写入main中定义名字的文件中，<a href="https://github.com/yep96/ZJU_healthreport/raw/master/name.jpg">如图</a>。
+
+云函数的版本。将data，ali.py上传至云函数平台，设置触发任务为时间触发 0 30 0 * * * 即可在八点半运行（云函数的时区为UTC +0）。
 
 相对于别的打卡脚本，我这个显得麻烦的多，又要更新又要设置api、ua的。为了更像真人，这里选择用cookies保持，而不是每次都重新登录；同时如果打卡网页发生改变，提交不对应的信息其实也能打卡成功，但学校会不会认真我也不知道。所以脚本的容差性是故意写的很差的，以免网页修改后乱打卡。不做GitHub action是因为这是境外ip。希望是想的太多吧
 
@@ -31,8 +34,6 @@
 area信息的获取：健康打卡中所在地点即可，如图<a href="https://github.com/yep96/ZJU_healthreport/raw/master/定位.jpg">定位.jpg</a>
 
 data文件中的数据可根据自己情况改，不修改提交效果如图<a href="https://github.com/yep96/ZJU_healthreport/raw/master/健康打卡.jpg">健康打卡.jpg</a>
-
-建议在电脑上打开<a href="https://healthreport.zju.edu.cn/ncov/wap/default/index">健康打卡网址</a>，按自己的情况填写后按F12，选择Network，断网（可选）点提交后，复制Form后，修改成提供文件的形式写入data文件。可用正则(.*):\ (.*)替换为'\1':'\2',
 
 脚本需安装requests模块
    ```bash
