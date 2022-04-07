@@ -18,18 +18,19 @@ class ZJUHealthReport():
     def __init__(self, user, passwd, ua, api, area, cookiesName = 'cookies'):
         self.session = requests.session()
         self.ua = {'User-Agent': ua}
-        self.api = api
-        self.area = area
         self.user = user
 
+        version = requests.get('https://pastebin.com/raw/6XCDvF71', verify=False)
+        if version and version.text != '2022/4/7':  # 检测一下有无更新，github国内访问不稳定
+            raise Exception("请更新版本")
+            
         with open(cookiesName) as f:
             cookies = eval(f.read())
 
         self.session.cookies = requests.utils.cookiejar_from_dict(cookies, cookiejar=None, overwrite=True)
         if '日常健康报备' not in self.session.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index', headers=self.ua).text:
             if not self.login(user, passwd):
-                SendText(self.api, '登陆失败')
-                self.session = None
+                raise Exception("登录失败")
 
         with open('data', encoding='utf-8') as f:
             self.data = eval(f.read())
@@ -58,9 +59,7 @@ class ZJUHealthReport():
             return False
         return True
 
-    def DK(self):
-        if self.session == None:
-            return False
+    def DK(self, area, campus):
         res = self.session.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index', headers=self.ua, verify=False)
         res.raise_for_status()
         res.encoding = "utf-8"
@@ -70,12 +69,14 @@ class ZJUHealthReport():
             logger.info('已打卡')
             return True
 
-        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('<', res.text)) != 1251) or (len(re.findall('active', res.text)) != 72):
-            SendText(self.api, '表单已更改，请等待更新或自行修改 {} {} {}'.format(len(re.findall('getdqtlqk', res.text)), len(re.findall('<', res.text)), len(re.findall('active', res.text))))  # 简单判断表单是否改变
+        chk = [len(re.findall(ss, res.text)) for ss in ['getdqtlqk', '<', 'active']]
+        if chk != [15, 1297, 79]:
+            raise Exception('表单已更改，请等待更新或自行修改 {} {} {}'.format(*chk))  # 简单判断表单是否改变
 
-        self.data['area'] = self.area
-        self.data['province'] = self.area.split()[0]
-        self.data['city'] = self.area.split()[1]
+        self.data['area'] = area
+        self.data['province'] = area.split()[0]
+        self.data['city'] = area.split()[1]
+        self.data['campus'] = campus
         self.data['id'] = re.search(r'"id":"?(\d*)"?,', res.text).groups()[0]
         self.data['uid'] = re.search(r'"uid":"?(\d*)"?,', res.text).groups()[0]
         self.data['date'] = re.search(r'"date":"?(\d*)"?,', res.text).groups()[0]
@@ -92,8 +93,7 @@ class ZJUHealthReport():
         res.raise_for_status()
         res.encoding = "utf-8"
         if '"e":0' not in res.text:  # 检查返回值，是否成功打卡
-            SendText(self.api, '打卡失败')
-            return False
+            raise Exception('打卡失败')
         logger.info('打卡成功')
 
 
@@ -106,9 +106,10 @@ if __name__ == '__main__':
     api = r'API'
     area = r'浙江省 杭州市 西湖区' # 填入健康打卡“所在地点”地址
     cookiesName = 'DK' # cookies的文件名
+    campus = 'XX校区'
     time.sleep(rand()*5+2)
     try:
-        DK = ZJUHealthReport(usr, passwd, ua, api, area, cookiesName=cookiesName)
-        DK.DK()
+        DK = ZJUHealthReport(usr, passwd, ua, cookiesName=cookiesName)
+        DK.DK(area， campus)
     except Exception as e:
         SendText(api, str(e))
