@@ -13,18 +13,17 @@ def SendText(api, Error):
 
 
 class ZJUHealthReport():
-    def __init__(self, user, passwd, ua, api, area, cwd, cookies = 'cookies'):
+    def __init__(self, user, passwd, ua, cwd, cookies = 'cookies'):
         self.session = requests.session()
         self.ua = {'User-Agent': ua}
-        self.api = api
-        self.area = area
+
         self.cwd = cwd if cwd[-1]=='/' else cwd+'/'
         self.cookies = self.cwd + cookies
         self.user = user
 
         # version = requests.get('https://pastebin.com/raw/6XCDvF71', verify=False)
-        # if version and version.text != '2021/7/9':  # 检测一下有无更新，github国内访问不稳定
-            # SendText(self.api, '请更新版本')
+        # if version and version.text != '2022/4/7':  # 检测一下有无更新，github国内访问不稳定
+        #     raise Exception("请更新版本")
 
         if os.path.exists(self.cookies):
             with open(self.cookies, encoding='utf-8') as f:
@@ -32,11 +31,8 @@ class ZJUHealthReport():
             self.session.cookies = requests.utils.cookiejar_from_dict(cookies, cookiejar=None, overwrite=True)
 
         if '日常健康报备' not in self.session.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index', headers=self.ua).text:
-            with open(self.cwd+'Logins', 'a', encoding='utf-8') as f:
-                f.write(time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())+user+'登录ZJU\n')  # 记录登录次数及时间
             if not self.login(user, passwd):
-                SendText(self.api, '登陆失败')
-                self.session = None
+                raise Exception("登录失败")
 
         with open(self.cwd+'data', encoding='utf-8') as f:
             self.data = eval(f.read())
@@ -65,25 +61,22 @@ class ZJUHealthReport():
             return False
         return True
 
-    def DK(self):
-        if self.session == None:
-            return False
+    def DK(self, area, campus):
         res = self.session.get(url='https://healthreport.zju.edu.cn/ncov/wap/default/index', headers=self.ua, verify=False)
         res.raise_for_status()
         res.encoding = "utf-8"
-        # print(str(requests.utils.dict_from_cookiejar(self.session.cookies)))
-        with open(self.cookies+'html', 'w', encoding='utf-8') as f:
-            f.write(res.text)
         if "hasFlag: '1'" in res.text:
             print('已打卡')
             return True
 
-        if (len(re.findall('getdqtlqk', res.text)) != 15) or (len(re.findall('<', res.text)) != 1251) or (len(re.findall('active', res.text)) != 72):
-            SendText(self.api, '表单已更改，请等待更新或自行修改 {} {} {}'.format(len(re.findall('getdqtlqk', res.text)), len(re.findall('<', res.text)), len(re.findall('active', res.text))))  # 简单判断表单是否改变
+        chk = [len(re.findall(ss, res.text)) for ss in ['getdqtlqk', '<', 'active']]
+        if chk != [15, 1297, 79]:
+            raise Exception('表单已更改，请等待更新或自行修改 {} {} {}'.format(*chk))  # 简单判断表单是否改变
 
-        self.data['area'] = self.area
-        self.data['province'] = self.area.split()[0]
-        self.data['city'] = self.area.split()[1]
+        self.data['area'] = area
+        self.data['province'] = area.split()[0]
+        self.data['city'] = area.split()[1]
+        self.data['campus'] = campus
         self.data['id'] = re.search(r'"id":"?(\d*)"?,', res.text).groups()[0]
         self.data['uid'] = re.search(r'"uid":"?(\d*)"?,', res.text).groups()[0]
         self.data['date'] = re.search(r'"date":"?(\d*)"?,', res.text).groups()[0]
@@ -100,8 +93,7 @@ class ZJUHealthReport():
         res.raise_for_status()
         res.encoding = "utf-8"
         if '"e":0' not in res.text:  # 检查返回值，是否成功打卡
-            SendText(self.api, '打卡失败')
-            return False
+            raise Exception('打卡失败')
         print('打卡成功')
 
         with open(self.cookies, 'w', encoding='utf-8') as f, open(self.cwd+'log', 'a') as log:
@@ -117,11 +109,12 @@ if __name__ == '__main__':
     api = [r'API1', r'API2']
     area = [r'浙江省 杭州市 西湖区', r'浙江省 杭州市 西湖区']  # 填入健康打卡“所在地点”地址
     cookies = ['名字1', '名字2'] # cookies和html的文件名，用于区分多人任务
+    campus = ['XX校区', 'XX校区'] # 写对应的校区
     cwd = r'/etc/Tasks/ZJU/'  # 脚本所在路径 如/etc/Tasks/ 或 D:/Tasks/ ,crontab执行时需要
     for i in range(len(cookies)):
         time.sleep(rand()*5+2)
         try:
-            DK = ZJUHealthReport(usr[i], passwd[i], ua[i], api[i], area[i], cwd, cookies=cookies[i])
-            DK.DK()
+            DK = ZJUHealthReport(usr[i], passwd[i], ua[i], cwd, cookies=cookies[i])
+            DK.DK(area[i], campus[i])
         except Exception as e:
             SendText(api[i], str(e))
