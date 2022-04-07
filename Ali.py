@@ -15,7 +15,7 @@ def SendText(api, Error):
 
 
 class ZJUHealthReport():
-    def __init__(self, user, passwd, ua, api, area, cookiesName = 'cookies'):
+    def __init__(self, user, passwd, ua, cookiesName = 'cookies'):
         self.session = requests.session()
         self.ua = {'User-Agent': ua}
         self.user = user
@@ -97,7 +97,7 @@ class ZJUHealthReport():
         logger.info('打卡成功')
 
 
-if __name__ == '__main__':
+def handler(event, context):
     usr = '学号'
     passwd = r'密码' # 登录好像有问题，随便填个占位置
     # 自己的钉钉ua，如在钉钉中打开http://www.all-tool.cn/Tools/ua/，也可只设置一个UA，修改ZJUHealthReport传入参数为ua[0]
@@ -110,6 +110,6 @@ if __name__ == '__main__':
     time.sleep(rand()*5+2)
     try:
         DK = ZJUHealthReport(usr, passwd, ua, cookiesName=cookiesName)
-        DK.DK(area， campus)
+        DK.DK(area, campus)
     except Exception as e:
         SendText(api, str(e))
