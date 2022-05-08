@@ -2,6 +2,7 @@ import os
 import time
 import re
 import requests
+import ddddocr
 from random import random as rand
 requests.packages.urllib3.disable_warnings()
 
@@ -22,7 +23,7 @@ class ZJUHealthReport():
         self.user = user
 
         version = requests.get('https://pastebin.com/raw/6XCDvF71', verify=False)
-        if version and version.text != '2022/4/7':  # 检测一下有无更新，github国内访问不稳定
+        if version and version.text != '2022/5/8':  # 检测一下有无更新，github国内访问不稳定
             raise Exception("请更新版本")
 
         if os.path.exists(self.cookies):
@@ -36,6 +37,8 @@ class ZJUHealthReport():
 
         with open(self.cwd+'data', encoding='utf-8') as f:
             self.data = eval(f.read())
+        
+        self.ocr = ddddocr.DdddOcr().classification
 
     def login(self, user, passwd):
         login_url = 'https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fhealthreport.zju.edu.cn%2Fa_zju%2Fapi%2Fsso%2Findex%3Fredirect%3Dhttps%253A%252F%252Fhealthreport.zju.edu.cn%252Fncov%252Fwap%252Fdefault%252Findex'
@@ -70,7 +73,7 @@ class ZJUHealthReport():
             return True
 
         chk = [len(re.findall(ss, res.text)) for ss in ['getdqtlqk', '<', 'active']]
-        if chk != [15, 1297, 79]:
+        if chk != [0, 972, 57]:
             raise Exception('表单已更改，请等待更新或自行修改 {} {} {}'.format(*chk))  # 简单判断表单是否改变
 
         self.data['area'] = area
@@ -88,13 +91,23 @@ class ZJUHealthReport():
         data2 = {'error': r'{"type":"error","message":"Get geolocation time out.Get ipLocation failed.","info":"FAILED","status":0}'}
         time.sleep(rand()*3+3)
         self.session.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save-geo-error', data=data2, headers=self.ua, verify=False)
-        time.sleep(rand()*3+2)  # 延迟假装在填写，应该没用
-        res = self.session.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save', data=self.data, headers=self.ua, verify=False)
-        res.raise_for_status()
-        res.encoding = "utf-8"
-        if '"e":0' not in res.text:  # 检查返回值，是否成功打卡
-            raise Exception('打卡失败')
-        print('打卡成功')
+        
+        for i in range(3):
+            code = self.session.get('https://healthreport.zju.edu.cn/ncov/wap/default/code', headers=self.index_ua, verify=False)
+            time.sleep(random.random()*3+2)  # 延迟假装在填写，应该没用
+            self.data['verifyCode'] = self.ocr(code.content).upper()
+            if len(self.data['verifyCode']) != 4:
+                continue
+            res = self.session.post(url='https://healthreport.zju.edu.cn/ncov/wap/default/save', data=self.data, headers=self.save_ua, verify=False)
+            res.raise_for_status()
+            res.encoding = "utf-8"
+            if '"e":0' in res.text:  # 检查返回值，是否成功打卡
+                print('打卡成功')
+                break
+            elif '验证码错误' not in res.text:
+                raise Exception('打卡失败' + res.text) # 未成功仅允许验证码错误
+        else:
+            raise Exception('打卡失败' + res.text)
 
         with open(self.cookies, 'w', encoding='utf-8') as f, open(self.cwd+'log', 'a') as log:
             f.write(str(requests.utils.dict_from_cookiejar(self.session.cookies)))    # 此时的cookies是有效的更新，否则不保存下次登录
