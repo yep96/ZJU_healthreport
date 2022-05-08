@@ -22,7 +22,7 @@ class ZJUHealthReport():
         self.user = user
 
         version = requests.get('https://pastebin.com/raw/6XCDvF71', verify=False)
-        if version and version.text != '2022/4/7':  # 检测一下有无更新，github国内访问不稳定
+        if version and version.text != '2022/5/8':  # 检测一下有无更新，github国内访问不稳定
             raise Exception("请更新版本")
             
         with open(cookiesName) as f:
